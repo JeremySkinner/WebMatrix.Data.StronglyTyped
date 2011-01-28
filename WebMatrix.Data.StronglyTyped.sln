@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebMatrix.Data.StronglyTyped", "src\WebMatrix.Data.StronglyTyped\WebMatrix.Data.StronglyTyped.csproj", "{7D3BBCDB-C8D9-4522-95DD-B8938D89CB39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebMatrix.Data.StronglyTyped.Tests", "src\WebMatrix.Data.StronglyTyped.Tests\WebMatrix.Data.StronglyTyped.Tests.csproj", "{03147992-2B9F-4F9B-9A12-656188DC57B0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7D3BBCDB-C8D9-4522-95DD-B8938D89CB39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D3BBCDB-C8D9-4522-95DD-B8938D89CB39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D3BBCDB-C8D9-4522-95DD-B8938D89CB39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D3BBCDB-C8D9-4522-95DD-B8938D89CB39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03147992-2B9F-4F9B-9A12-656188DC57B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03147992-2B9F-4F9B-9A12-656188DC57B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03147992-2B9F-4F9B-9A12-656188DC57B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03147992-2B9F-4F9B-9A12-656188DC57B0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
