@@ -114,6 +114,17 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			}
 		}
 
+		[Test]
+		public void Does_not_map_properties_with_NotMapped_attribute() {
+			using (var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var result = db.Query<User5>("select * from Users").Single();
+				result.Id.ShouldEqual(1);
+				result.Name.ShouldBeNull();
+			}
+		}
+
 		public class User {
 			public int Id { get; set; }
 			public string Name { get; set; }
@@ -133,6 +144,12 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			public User4(int x) {
 				
 			}
+		}
+
+		public class User5 {
+			public int Id { get; set; }
+			[NotMapped]
+			public string Name { get; set; }
 		}
 	}
 }

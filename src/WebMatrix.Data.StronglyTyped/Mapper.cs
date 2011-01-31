@@ -19,25 +19,31 @@
 namespace WebMatrix.Data.StronglyTyped {
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using System.Linq.Expressions;
 	using System.Reflection;
 
 	public class Mapper<T> {
-		private Func<T> factory;
-		private Dictionary<string, Action<T, object>> setters = new Dictionary<string, Action<T, object>>();
-		private static Lazy<Mapper<T>> _instance = new Lazy<Mapper<T>>(() => new Mapper<T>());
+		readonly Func<T> factory;
+		readonly Dictionary<string, Action<T, object>> setters = new Dictionary<string, Action<T, object>>();
+		static readonly Lazy<Mapper<T>> instanceCache = new Lazy<Mapper<T>>(() => new Mapper<T>());
 
 		public static Mapper<T> Create() {
-			return _instance.Value;
+			return instanceCache.Value;
 		}
 
 		private Mapper() {
 			factory = CreateActivatorDelegate();
 
-			foreach (var property in typeof (T).GetProperties()) {
-				if (property.CanWrite) {
-					setters[property.Name] = BuildSetterDelegate(property);
-				}
+			// Get all properties that are writeable without a NotMapped attribute.
+			var properties = from property in typeof(T).GetProperties()
+						where property.CanWrite
+						let notMappedAttr = (NotMappedAttribute)Attribute.GetCustomAttribute(property, typeof(NotMappedAttribute))
+						where notMappedAttr == null
+						select new { property.Name, Setter = BuildSetterDelegate(property) };
+
+			foreach(var property in properties) {
+				setters[property.Name] = property.Setter;
 			}
 		}
 
