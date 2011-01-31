@@ -68,17 +68,13 @@ namespace WebMatrix.Data.StronglyTyped {
 
 
 		private static Func<T> CreateActivatorDelegate() {
-			var constructorInfo = typeof (T).GetConstructor(Type.EmptyTypes);
+			var constructor = typeof (T).GetConstructor(Type.EmptyTypes);
 
 			// No parameterless constructor found.
-			if(constructorInfo == null) {
+			if(constructor == null) {
 				return () => { throw MappingException.NoParameterlessConstructor(typeof(T)); };
 			}
 
-			return CreateActivatorDelegate(constructorInfo);
-		}
-
-		private static Func<T> CreateActivatorDelegate(ConstructorInfo constructor) {
 			return Expression.Lambda<Func<T>>(Expression.New(constructor)).Compile();
 		}
 
