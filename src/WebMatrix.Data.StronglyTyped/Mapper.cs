@@ -48,7 +48,12 @@ namespace WebMatrix.Data.StronglyTyped {
 				Action<T, object> setter;
 
 				if (setters.TryGetValue(column, out setter)) {
-					setter(instance, record[column]);
+					try {
+						setter(instance, record[column]);
+					}
+					catch(InvalidCastException e) {
+						throw MappingException.InvalidCast(column, e);
+					}
 				}
 			}
 
@@ -57,7 +62,14 @@ namespace WebMatrix.Data.StronglyTyped {
 
 
 		private static Func<T> CreateActivatorDelegate() {
-			return CreateActivatorDelegate(typeof (T).GetConstructor(Type.EmptyTypes));
+			var constructorInfo = typeof (T).GetConstructor(Type.EmptyTypes);
+
+			// No parameterless constructor found.
+			if(constructorInfo == null) {
+				return () => { throw MappingException.NoParameterlessConstructor(typeof(T)); };
+			}
+
+			return CreateActivatorDelegate(constructorInfo);
 		}
 
 		private static Func<T> CreateActivatorDelegate(ConstructorInfo constructor) {

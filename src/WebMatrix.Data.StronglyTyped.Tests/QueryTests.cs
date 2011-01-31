@@ -49,6 +49,13 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			}
 		}
 
+		[SetUp]
+		public void Setup() {
+			using(var db = Database.Open("Test")) {
+				db.Execute("delete from Users");
+			}
+		}
+
 		[Test]
 		public void Gets_data_strongly_typed() {
 			using (var db = Database.Open("Test")) {
@@ -67,9 +74,65 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		}
 
 
+		[Test]
+		public void Does_not_throw_when_object_does_not_have_property() {
+			using(var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var results = db.Query<User>("select Name as Foo from Users").ToList();
+				results.Single().Name.ShouldBeNull();
+			}
+		}
+
+		[Test]
+		public void Does_not_throw_when_property_not_settable() {
+			using(var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				db.Query<User2>("select Name from Users").ToList();
+			}
+		}
+
+		[Test]
+		public void Throws_when_property_of_wrong_type() {
+			using (var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var ex = Assert.Throws<MappingException>(() => db.Query<User3>("select Name from Users").ToList());
+				ex.Message.ShouldEqual("Could not map the property 'Name' as its data type does not match the database.");
+			}
+		}
+
+		[Test]
+		public void Throws_when_cannot_instantiate_object() {
+			using(var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var ex = Assert.Throws<MappingException>(() => db.Query<User4>("select * from Users").ToList());
+				ex.Message.ShouldEqual("Could not find a parameterless constructor on the type 'WebMatrix.Data.StronglyTyped.Tests.QueryTests+User4'. WebMatrix.Data.StronglyTyped can only be used to map types that have a public, parameterless constructor.");
+
+			}
+		}
+
 		public class User {
 			public int Id { get; set; }
 			public string Name { get; set; }
+		}
+
+		public class User2 {
+			public string Name {
+				get { return null; }
+			}
+		}
+
+		public class User3 {
+			public int Name { get; set; }
+		}
+
+		public class User4 : User {
+			public User4(int x) {
+				
+			}
 		}
 	}
 }
