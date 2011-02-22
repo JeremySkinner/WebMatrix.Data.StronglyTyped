@@ -22,10 +22,11 @@ namespace WebMatrix.Data.StronglyTyped {
 	using System.Linq;
 	using System.Linq.Expressions;
 	using System.Reflection;
+	using System.Text;
 
 	public class Mapper<T> {
 		readonly Func<T> factory;
-		readonly Dictionary<string, Action<T, object>> setters = new Dictionary<string, Action<T, object>>();
+		readonly Dictionary<string, PropertyMetadata<T>> properties = new Dictionary<string, PropertyMetadata<T>>();
 		static readonly Lazy<Mapper<T>> instanceCache = new Lazy<Mapper<T>>(() => new Mapper<T>());
 
 		public static Mapper<T> Create() {
@@ -40,10 +41,10 @@ namespace WebMatrix.Data.StronglyTyped {
 						where property.CanWrite
 						let notMappedAttr = (NotMappedAttribute)Attribute.GetCustomAttribute(property, typeof(NotMappedAttribute))
 						where notMappedAttr == null
-						select new { property.Name, Setter = BuildSetterDelegate(property) };
+						select property;
 
 			foreach(var property in properties) {
-				setters[property.Name] = property.Setter;
+				this.properties[property.Name] = new PropertyMetadata<T>(property);
 			}
 		}
 
@@ -51,11 +52,11 @@ namespace WebMatrix.Data.StronglyTyped {
 			var instance = factory();
 
 			foreach (var column in record.Columns) {
-				Action<T, object> setter;
+				PropertyMetadata<T> property;
 
-				if (setters.TryGetValue(column, out setter)) {
+				if (properties.TryGetValue(column, out property)) {
 					try {
-						setter(instance, record[column]);
+						property.SetValue(instance, record[column]);
 					}
 					catch(InvalidCastException e) {
 						throw MappingException.InvalidCast(column, e);
@@ -64,6 +65,66 @@ namespace WebMatrix.Data.StronglyTyped {
 			}
 
 			return instance;
+		}
+
+		public Tuple<string, object[]> MapToInsert(T toInsert, string tableName) {
+			string insert = "insert into [{0}] ({1}) values ({2})";
+			var columns = new List<string>();
+			var parameterNames = new List<string>();
+			var parameters = new List<object>();
+
+			int parameterCounter = 0;
+
+			foreach(var property in properties.Values) {
+				columns.Add(property.Property.Name);
+				parameterNames.Add("@" + parameterCounter++);
+				parameters.Add(property.GetValue(toInsert));
+			}
+		
+			tableName = tableName ?? typeof(T).Name;
+
+			insert = string.Format(insert, 
+				tableName, 
+				string.Join(", ", columns), 
+				string.Join(", ", parameterNames));
+
+			return Tuple.Create(insert, parameters.ToArray());
+		}
+
+		public Tuple<string, object[]> MapToUpdate(T toUpdate, string tableName) {
+			string update = "update [{0}] set {1} where {2}";
+			
+			var idColumns = new List<string>();
+
+			var columns = new List<string>();
+			var parameters = new List<object>();
+			int parameterCount = 0;
+
+
+			foreach(var property in properties.Values) {
+				if(property.IsId) {
+					idColumns.Add(property.Property.Name + " = @" + parameterCount++);
+					parameters.Add(property.GetValue(toUpdate));
+				}
+				else {
+					columns.Add(property.Property.Name + " = @" + parameterCount++);
+					parameters.Add(property.GetValue(toUpdate));
+				}
+			}
+
+			if(idColumns.Count == 0) {
+				throw new NotSupportedException(string.Format("Could not determine Primary Key properties for {0}", typeof(T).Name));
+			}
+
+			update = string.Format(
+				update, 
+				tableName, 
+				string.Join(", ", columns),
+				string.Join(" AND ",  idColumns)
+			);
+
+			return Tuple.Create(update, parameters.ToArray());
+
 		}
 
 
@@ -78,17 +139,5 @@ namespace WebMatrix.Data.StronglyTyped {
 			return Expression.Lambda<Func<T>>(Expression.New(constructor)).Compile();
 		}
 
-		private static Action<T, object> BuildSetterDelegate(PropertyInfo prop) {
-			var instance = Expression.Parameter(typeof (T), "x");
-			var argument = Expression.Parameter(typeof (object), "v");
-
-			var setterCall = Expression.Call(
-				instance,
-				prop.GetSetMethod(true),
-				Expression.Convert(argument, prop.PropertyType));
-
-
-			return (Action<T, object>) Expression.Lambda(setterCall, instance, argument).Compile();
-		}
 	}
 }

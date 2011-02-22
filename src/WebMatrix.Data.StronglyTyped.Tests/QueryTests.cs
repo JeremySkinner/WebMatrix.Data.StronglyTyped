@@ -17,6 +17,7 @@
 #endregion
 
 namespace WebMatrix.Data.StronglyTyped.Tests {
+	using System;
 	using System.Data.SqlServerCe;
 	using System.IO;
 	using System.Linq;
@@ -47,6 +48,7 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 				cmd.CommandText = "create table Users (Id int, Name nvarchar(250))";
 				cmd.ExecuteNonQuery();
 			}
+
 		}
 
 		[SetUp]

@@ -18,13 +18,38 @@
 
 namespace WebMatrix.Data.StronglyTyped {
 	using System.Collections.Generic;
+	using System.IO;
 	using System.Linq;
 
 	public static class StrongTypingExtensions {
+		public static TextWriter Log = TextWriter.Null;
+
 		public static IEnumerable<T> Query<T>(this Database db, string commandText, params object[] args) {
 			var queryResults = db.Query(commandText, args);
 			var mapper = Mapper<T>.Create();
 			return (from DynamicRecord record in queryResults select mapper.Map(record)).ToList();
+		}
+
+		public static void Insert<T>(this Database db, T toInsert, string tableName = null) {
+			var mapper = Mapper<T>.Create();
+			var results = mapper.MapToInsert(toInsert, tableName);
+			var sql = results.Item1;
+			var parameters = results.Item2;
+
+			Log.WriteLine(sql);
+
+			db.Execute(sql, parameters);
+		}
+
+		public static void Update<T>(this Database db, T toUpdate, string tableName = null) {
+			var mapper = Mapper<T>.Create();
+			var results = mapper.MapToUpdate(toUpdate, tableName);
+			var sql = results.Item1;
+			var parameters = results.Item2;
+
+			Log.WriteLine(sql);
+
+			db.Execute(sql, parameters);
 		}
 	}
 }
