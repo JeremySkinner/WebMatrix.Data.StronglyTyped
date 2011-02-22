@@ -18,6 +18,7 @@
 
 namespace WebMatrix.Data.StronglyTyped.Tests {
 	using System;
+	using System.ComponentModel.DataAnnotations;
 	using System.Data.SqlServerCe;
 	using System.IO;
 	using System.Linq;
@@ -127,27 +128,54 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			}
 		}
 
+		[Test]
+		public void FindAll_gets_all() {
+			using(var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+				db.Execute("insert into Users (Id, Name) values (2, 'Jeremy')");
+
+				var result = db.FindAll<User>();
+				result.Count().ShouldEqual(2);
+			}
+		}
+
+		[Test]
+		public void FindById_finds_by_id() {
+			using (var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var result = db.FindById<User>(1);
+				result.Name.ShouldEqual("Jeremy");
+			}
+		}
+
+		[Table("Users")]
 		public class User {
+			[Key]
 			public int Id { get; set; }
 			public string Name { get; set; }
 		}
 
+		[Table("Users")]
 		public class User2 {
 			public string Name {
 				get { return null; }
 			}
 		}
 
+		[Table("Users")]
 		public class User3 {
 			public int Name { get; set; }
 		}
 
+		[Table("Users")]
 		public class User4 : User {
 			public User4(int x) {
 				
 			}
 		}
 
+		[Table("Users")]
 		public class User5 {
 			public int Id { get; set; }
 			[NotMapped]

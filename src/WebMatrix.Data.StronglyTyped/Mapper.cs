@@ -29,12 +29,17 @@ namespace WebMatrix.Data.StronglyTyped {
 		readonly Dictionary<string, PropertyMetadata<T>> properties = new Dictionary<string, PropertyMetadata<T>>();
 		static readonly Lazy<Mapper<T>> instanceCache = new Lazy<Mapper<T>>(() => new Mapper<T>());
 
+		public string TableName { get; private set; }
+
 		public static Mapper<T> Create() {
 			return instanceCache.Value;
 		}
 
 		private Mapper() {
 			factory = CreateActivatorDelegate();
+
+			var attribute = (TableAttribute)Attribute.GetCustomAttribute(typeof(T), typeof(TableAttribute));
+			TableName = attribute != null ? attribute.Name : typeof(T).Name;
 
 			// Get all properties that are writeable without a NotMapped attribute.
 			var properties = from property in typeof(T).GetProperties()
@@ -67,7 +72,7 @@ namespace WebMatrix.Data.StronglyTyped {
 			return instance;
 		}
 
-		public Tuple<string, object[]> MapToInsert(T toInsert, string tableName) {
+		public Tuple<string, object[]> MapToInsert(T toInsert) {
 			string insert = "insert into [{0}] ({1}) values ({2})";
 			var columns = new List<string>();
 			var parameterNames = new List<string>();
@@ -83,17 +88,15 @@ namespace WebMatrix.Data.StronglyTyped {
 				parameters.Add(property.GetValue(toInsert));
 			}
 		
-			tableName = tableName ?? typeof(T).Name;
-
 			insert = string.Format(insert, 
-				tableName, 
+				TableName, 
 				string.Join(", ", columns), 
 				string.Join(", ", parameterNames));
 
 			return Tuple.Create(insert, parameters.ToArray());
 		}
 
-		public Tuple<string, object[]> MapToUpdate(T toUpdate, string tableName) {
+		public Tuple<string, object[]> MapToUpdate(T toUpdate) {
 			string update = "update [{0}] set {1} where {2}";
 			
 			var idColumns = new List<string>();
@@ -120,7 +123,7 @@ namespace WebMatrix.Data.StronglyTyped {
 
 			update = string.Format(
 				update, 
-				tableName, 
+				TableName, 
 				string.Join(", ", columns),
 				string.Join(" AND ",  idColumns)
 			);
@@ -147,7 +150,7 @@ namespace WebMatrix.Data.StronglyTyped {
 				throw new NotSupportedException(string.Format("Multiple PK properties were defined on type {0}", typeof(T).Name));
 			}
 			if(cols.Count == 0) {
-				throw new NotSupportedException(string.Format("No PK properties were defined on type {1}.", typeof (T).Name));
+				throw new NotSupportedException(string.Format("No PK properties were defined on type {0}.", typeof (T).Name));
 			}
 
 			return cols.Single();

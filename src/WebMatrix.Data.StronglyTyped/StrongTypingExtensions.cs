@@ -30,9 +30,22 @@ namespace WebMatrix.Data.StronglyTyped {
 			return (from DynamicRecord record in queryResults select mapper.Map(record)).ToList();
 		}
 
-		public static void Insert<T>(this Database db, T toInsert, string tableName = null) {
+		public static IEnumerable<T> FindAll<T>(this Database db) {
 			var mapper = Mapper<T>.Create();
-			var results = mapper.MapToInsert(toInsert, tableName);
+			var query = string.Format("select * from {0}", mapper.TableName);
+			return db.Query<T>(query);
+		}
+
+		public static T FindById<T>(this Database db, object id) {
+			var mapper = Mapper<T>.Create();
+			var idCol = mapper.GetIdColumn();
+			var query = string.Format("select * from {0} where {1} = @0", mapper.TableName, idCol.Property.Name);
+			return db.Query<T>(query, id).SingleOrDefault();
+		}
+
+		public static void Insert<T>(this Database db, T toInsert) {
+			var mapper = Mapper<T>.Create();
+			var results = mapper.MapToInsert(toInsert);
 			var sql = results.Item1;
 			var parameters = results.Item2;
 
@@ -47,9 +60,9 @@ namespace WebMatrix.Data.StronglyTyped {
 			idColumn.SetValue(toInsert, id);
 		}
 
-		public static void Update<T>(this Database db, T toUpdate, string tableName = null) {
+		public static void Update<T>(this Database db, T toUpdate) {
 			var mapper = Mapper<T>.Create();
-			var results = mapper.MapToUpdate(toUpdate, tableName);
+			var results = mapper.MapToUpdate(toUpdate);
 			var sql = results.Item1;
 			var parameters = results.Item2;
 

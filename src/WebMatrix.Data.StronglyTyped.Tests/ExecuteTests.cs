@@ -46,7 +46,7 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		[Test]
 		public void Inserts_record() {
 			using (var db = Database.Open("Test")) {
-				db.Insert(new User { Name = "Foo" }, "Users");
+				db.Insert(new User { Name = "Foo" });
 
 				var result = db.Query<User>("select * from users").Single();
 				result.Id.ShouldEqual(1);
@@ -58,9 +58,9 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		public void Updates_record() {
 			using (var db = Database.Open("Test")) {
 				var user = new User { Name = "Foo" };
-				db.Insert(user, "Users");
+				db.Insert(user);
 				user.Name = "Bar";
-				db.Update(user, "Users");
+				db.Update(user);
 
 				var result = db.Query<User>("select * from users").Single();
 				result.Name.ShouldEqual("Bar");
@@ -72,12 +72,13 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		public void Inserts_with_store_generated_id() {
 			using(var db = Database.Open("Test")) {
 				var user = new User{ Name = "Foo" };
-				db.Insert(user, "Users");
+				db.Insert(user);
 				
 				user.Id.ShouldNotEqual(0);
 			}
 		}
 
+		[Table("Users")]
 		public class User {
 			[Key]
 			public int Id { get; set; }
