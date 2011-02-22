@@ -76,6 +76,8 @@ namespace WebMatrix.Data.StronglyTyped {
 			int parameterCounter = 0;
 
 			foreach(var property in properties.Values) {
+				if(property.IsId) continue; // assume ID properties are store-generated.
+				
 				columns.Add(property.Property.Name);
 				parameterNames.Add("@" + parameterCounter++);
 				parameters.Add(property.GetValue(toInsert));
@@ -139,5 +141,16 @@ namespace WebMatrix.Data.StronglyTyped {
 			return Expression.Lambda<Func<T>>(Expression.New(constructor)).Compile();
 		}
 
+		public PropertyMetadata<T> GetIdColumn() {
+			var cols = this.properties.Where(x => x.Value.IsId).Select(x => x.Value).ToList();
+			if(cols.Count > 1) {
+				throw new NotSupportedException(string.Format("Multiple PK properties were defined on type {0}", typeof(T).Name));
+			}
+			if(cols.Count == 0) {
+				throw new NotSupportedException(string.Format("No PK properties were defined on type {1}.", typeof (T).Name));
+			}
+
+			return cols.Single();
+		}
 	}
 }

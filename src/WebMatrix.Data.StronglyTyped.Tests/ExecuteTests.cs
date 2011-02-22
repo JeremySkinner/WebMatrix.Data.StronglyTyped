@@ -28,7 +28,7 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 				var cmd = conn.CreateCommand();
 				conn.Open();
 
-				cmd.CommandText = "create table Users (Id int, Name nvarchar(250))";
+				cmd.CommandText = "create table Users (Id int identity, Name nvarchar(250))";
 				cmd.ExecuteNonQuery();
 			}
 
@@ -46,7 +46,7 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		[Test]
 		public void Inserts_record() {
 			using (var db = Database.Open("Test")) {
-				db.Insert(new User { Id = 1, Name = "Foo" }, "Users");
+				db.Insert(new User { Name = "Foo" }, "Users");
 
 				var result = db.Query<User>("select * from users").Single();
 				result.Id.ShouldEqual(1);
@@ -57,23 +57,33 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		[Test]
 		public void Updates_record() {
 			using (var db = Database.Open("Test")) {
-				var user = new User { Id = 1, Name = "Foo" };
+				var user = new User { Name = "Foo" };
 				db.Insert(user, "Users");
 				user.Name = "Bar";
 				db.Update(user, "Users");
 
 				var result = db.Query<User>("select * from users").Single();
-				result.Id.ShouldEqual(1);
 				result.Name.ShouldEqual("Bar");
 			}
 		}
 
+
+		[Test]
+		public void Inserts_with_store_generated_id() {
+			using(var db = Database.Open("Test")) {
+				var user = new User{ Name = "Foo" };
+				db.Insert(user, "Users");
+				
+				user.Id.ShouldNotEqual(0);
+			}
+		}
 
 		public class User {
 			[Key]
 			public int Id { get; set; }
 			public string Name { get; set; }
 		}
+
 	}
 
 }

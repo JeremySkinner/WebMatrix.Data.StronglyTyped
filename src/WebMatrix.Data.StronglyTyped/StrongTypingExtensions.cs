@@ -39,6 +39,12 @@ namespace WebMatrix.Data.StronglyTyped {
 			Log.WriteLine(sql);
 
 			db.Execute(sql, parameters);
+
+			//TODO: Don't assume ID will always be an int.
+
+			var id = (int)db.GetLastInsertId();
+			var idColumn = mapper.GetIdColumn();
+			idColumn.SetValue(toInsert, id);
 		}
 
 		public static void Update<T>(this Database db, T toUpdate, string tableName = null) {
