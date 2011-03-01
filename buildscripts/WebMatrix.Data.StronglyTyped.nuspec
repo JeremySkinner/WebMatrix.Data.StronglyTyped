@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>WebMatrix.Data.StronglyTyped</id>
+    <version></version>
+    <authors>Jeremy Skinner</authors>
+    <licenseUrl>https://github.com/JeremySkinner/WebMatrix.Data.StronglyTyped/blob/master/License.txt</licenseUrl>
+    <projectUrl>https://github.com/JeremySkinner/WebMatrix.Data.StronglyTyped</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Strongly typed extensions for WebMatrix.Data</description>
+    <summary>Strongly typed extensions for WbMatrix.Data</summary>
+    <language>en-US</language>
+  </metadata>
+</package>

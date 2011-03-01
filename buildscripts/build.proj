@@ -1,0 +1,69 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0" DefaultTargets="default">
+	<PropertyGroup>
+		<BaseDir>$(MSBuildProjectDirectory)\..</BaseDir>
+		<Configuration Condition="'$(Configuration)'==''" >Release</Configuration>
+		<BuildDir>$(BaseDir)\build</BuildDir>
+		<OutputDir>$(BuildDir)\$(Configuration)</OutputDir>
+		<PackageDir>$(BuildDir)\Packages</PackageDir>
+		<SolutionFile>$(BaseDir)\WebMatrix.Data.StronglyTyped.sln</SolutionFile>
+		<TestAssemblies>
+			$(BaseDir)\src\WebMatrix.Data.StronglyTyped.Tests\bin\$(Configuration)\WebMatrix.Data.StronglyTyped.Tests.dll;
+		</TestAssemblies>
+		<MSBuildExtensions>$(BaseDir)\packages\msbuild\msbuild.community.tasks.dll</MSBuildExtensions>
+		<NuGetExe>$(BaseDir)\packages\NuGet.CommandLine.1.2.20216.59\Tools\NuGet.exe</NuGetExe>
+	</PropertyGroup>
+  <UsingTask AssemblyFile="$(MSBuildExtensions)" TaskName="MSBuild.Community.Tasks.NUnit" Condition="'$(teamcity_version)' == ''" />
+	<UsingTask AssemblyFile="$(MSBuildExtensions)" TaskName="MSBuild.Community.Tasks.XmlUpdate" />
+	
+	<Target Name="default" DependsOnTargets="Compile; Test; Deploy; Package" />
+	
+	<Target Name="Compile">
+		<MSBuild Projects="$(SolutionFile)" Properties="Configuration=$(Configuration)"  />
+	</Target>
+
+	<Target Name="Test">
+		<NUnit Assemblies="$(TestAssemblies)" ToolPath="$(BaseDir)\packages\NUnit.2.5.7.10213\Tools"  />
+	</Target>
+
+	<Target Name="Package" DependsOnTargets="Deploy; PackageNuPack" />
+
+	<Target Name="Deploy">
+		<RemoveDir Directories="$(BuildDir)" />
+		
+		<ItemGroup>
+			<MainBinaries Include="$(BaseDir)\src\WebMatrix.Data.StronglyTyped\bin\$(Configuration)\**\*.*" />
+			<Docs Include="$(BaseDir)\License.txt" />
+		</ItemGroup>
+
+		<!-- Copy to the output directory -->
+		<Copy SourceFiles="@(MainBinaries)" DestinationFolder="$(OutputDir)\WebMatrix.Data.StronglyTyped\%(RecursiveDir)"  />
+  </Target>
+
+
+	<Target Name="PackageNuPack" DependsOnTargets="Deploy">
+		<!-- First copy the nuspec template files to the package dir -->
+		<Copy SourceFiles="$(MSBuildProjectDirectory)\WebMatrix.Data.StronglyTyped.nuspec" DestinationFolder="$(PackageDir)\temp\WebMatrix.Data.StronglyTyped" />		
+		
+		<!-- Copy the source files to the package dir -->
+		<Copy SourceFiles="@(MainBinaries)" DestinationFolder="$(PackageDir)\temp\WebMatrix.Data.StronglyTyped\lib\%(RecursiveDir)" />
+		
+		<!-- Get the version number of the main FV assembly to insert into the nuspec files -->
+		<GetAssemblyIdentity AssemblyFiles="$(OutputDir)\WebMatrix.Data.StronglyTyped\WebMatrix.Data.StronglyTyped.dll">
+			<Output TaskParameter="Assemblies" ItemName="AsmInfo" />
+		</GetAssemblyIdentity>
+
+		<!-- insert the version number into the nuspec files -->
+		<XmlUpdate
+		  Namespace="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
+			XmlFileName="$(PackageDir)\temp\WebMatrix.Data.StronglyTyped\WebMatrix.Data.StronglyTyped.nuspec"
+			XPath="/package/metadata/version"
+			Value="%(AsmInfo.Version)" />
+
+		<!-- Also need to insert the version number into the MVC3 dependencies section -->
+		
+		<Exec WorkingDirectory="$(BuildDir)\Packages" 
+					Command="$(NuGetExe) pack $(PackageDir)\temp\WebMatrix.Data.StronglyTyped\WebMatrix.Data.StronglyTyped.nuspec" />
+		
+		<RemoveDir Directories="$(PackageDir)\temp" />
+	</Target>
+</Project>
