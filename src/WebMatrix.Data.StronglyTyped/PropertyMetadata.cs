@@ -13,7 +13,7 @@ namespace WebMatrix.Data.StronglyTyped {
 			this.property = property;
 			this.setter = BuildSetterDelegate(property);
 			this.getter = BuildGetterDelegate(property);
-			IsId = Attribute.IsDefined(property, typeof(KeyAttribute));
+			IsId = Attribute.IsDefined(property, typeof(KeyAttribute)) || property.Name == "Id" || property.Name == "ID";
 		}
 
 		public bool IsId { get; private set; }

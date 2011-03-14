@@ -28,7 +28,7 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 				var cmd = conn.CreateCommand();
 				conn.Open();
 
-				cmd.CommandText = "create table Users (Id int identity, Name nvarchar(250))";
+				cmd.CommandText = "create table Users (Id int identity not null, Name nvarchar(250))";
 				cmd.ExecuteNonQuery();
 			}
 
@@ -78,9 +78,26 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			}
 		}
 
+		[Test]
+		public void Inserts_with_store_generated_id_when_id_is_implicit() {
+			using (var db = Database.Open("Test")) {
+				var user = new UserWithImplicitId { Name = "Foo" };
+				db.Insert(user);
+
+				user.Id.ShouldNotEqual(0);
+			}
+		}
+
+
 		[Table("Users")]
 		public class User {
 			[Key]
+			public int Id { get; set; }
+			public string Name { get; set; }
+		}
+
+		[Table("Users")]
+		public class UserWithImplicitId {
 			public int Id { get; set; }
 			public string Name { get; set; }
 		}
