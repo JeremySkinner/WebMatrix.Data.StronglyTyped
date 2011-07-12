@@ -13,13 +13,26 @@ namespace WebMatrix.Data.StronglyTyped {
 			this.property = property;
 			this.setter = BuildSetterDelegate(property);
 			this.getter = BuildGetterDelegate(property);
-			IsId = Attribute.IsDefined(property, typeof(KeyAttribute)) || property.Name == "Id" || property.Name == "ID";
+			PropertyName = MapPropertyName(property);
+			IsId = 
+				Attribute.IsDefined(property, typeof(KeyAttribute)) || 
+				property.Name == "Id" || property.Name == "ID";
+		}
+
+		static string MapPropertyName(PropertyInfo property) {
+			var attribute = (ColumnAttribute)Attribute.GetCustomAttribute(property, typeof(ColumnAttribute));
+			if(attribute==null) return property.Name;
+			return attribute.Name;
 		}
 
 		public bool IsId { get; private set; }
 
 		public PropertyInfo Property {
 			get { return property; }
+		}
+
+		public string PropertyName { 
+			get; protected set; 
 		}
 
 		public void SetValue(T instance, object value) {
@@ -38,7 +51,6 @@ namespace WebMatrix.Data.StronglyTyped {
 				instance,
 				prop.GetSetMethod(true),
 				Expression.Convert(argument, prop.PropertyType));
-
 
 			return (Action<T, object>)Expression.Lambda(setterCall, instance, argument).Compile();
 		}

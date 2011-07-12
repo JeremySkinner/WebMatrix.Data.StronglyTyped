@@ -51,7 +51,8 @@ namespace WebMatrix.Data.StronglyTyped {
 						select property;
 
 			foreach(var property in properties) {
-				this.properties[property.Name] = new PropertyMetadata<T>(property);
+				var propertyMetadata = new PropertyMetadata<T>(property);
+				this.properties[propertyMetadata.PropertyName] = propertyMetadata;
 			}
 		}
 
@@ -85,7 +86,7 @@ namespace WebMatrix.Data.StronglyTyped {
 			foreach(var property in properties.Values) {
 				if(property.IsId) continue; // assume ID properties are store-generated.
 				
-				columns.Add(property.Property.Name);
+				columns.Add(property.PropertyName);
 				parameterNames.Add("@" + parameterCounter++);
 				parameters.Add(property.GetValue(toInsert));
 			}
@@ -110,11 +111,11 @@ namespace WebMatrix.Data.StronglyTyped {
 
 			foreach(var property in properties.Values) {
 				if(property.IsId) {
-					idColumns.Add(property.Property.Name + " = @" + parameterCount++);
+					idColumns.Add(property.PropertyName + " = @" + parameterCount++);
 					parameters.Add(property.GetValue(toUpdate));
 				}
 				else {
-					columns.Add(property.Property.Name + " = @" + parameterCount++);
+					columns.Add(property.PropertyName + " = @" + parameterCount++);
 					parameters.Add(property.GetValue(toUpdate)??DBNull.Value);
 				}
 			}

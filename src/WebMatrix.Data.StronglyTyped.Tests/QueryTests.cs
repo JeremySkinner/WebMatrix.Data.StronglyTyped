@@ -76,6 +76,16 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			}
 		}
 
+		[Test]
+		public void Gets_property_with_remapped_name() {
+			using(var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var results = db.Query<User6>("select * from Users").ToList();
+				results.Count.ShouldEqual(1);
+				results[0].OtherName.ShouldEqual("Jeremy");
+			}
+		}
 
 		[Test]
 		public void Does_not_throw_when_object_does_not_have_property() {
@@ -180,6 +190,13 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			public int Id { get; set; }
 			[NotMapped]
 			public string Name { get; set; }
+		}
+
+		[Table("Users")]
+		public class User6 {
+			public int Id { get; set; }
+			[Column("Name")]
+			public string OtherName { get; set; }
 		}
 	}
 }
