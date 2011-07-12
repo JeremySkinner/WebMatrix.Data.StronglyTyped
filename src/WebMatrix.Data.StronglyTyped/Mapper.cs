@@ -26,7 +26,7 @@ namespace WebMatrix.Data.StronglyTyped {
 
 	public class Mapper<T> {
 		readonly Func<T> factory;
-		readonly Dictionary<string, PropertyMetadata<T>> properties = new Dictionary<string, PropertyMetadata<T>>();
+		readonly Dictionary<string, PropertyMetadata<T>> properties;
 		static readonly Lazy<Mapper<T>> instanceCache = new Lazy<Mapper<T>>(() => new Mapper<T>());
 
 		public string TableName { get; private set; }
@@ -36,6 +36,8 @@ namespace WebMatrix.Data.StronglyTyped {
 		}
 
 		private Mapper() {
+			this.properties = new Dictionary<string, PropertyMetadata<T>>(StringComparer.InvariantCultureIgnoreCase);
+
 			factory = CreateActivatorDelegate();
 
 			var attribute = (TableAttribute)Attribute.GetCustomAttribute(typeof(T), typeof(TableAttribute));
@@ -49,7 +51,8 @@ namespace WebMatrix.Data.StronglyTyped {
 						select property;
 
 			foreach(var property in properties) {
-				this.properties[property.Name] = new PropertyMetadata<T>(property);
+				var propertyMetadata = new PropertyMetadata<T>(property);
+				this.properties[propertyMetadata.PropertyName] = propertyMetadata;
 			}
 		}
 
@@ -83,7 +86,7 @@ namespace WebMatrix.Data.StronglyTyped {
 			foreach(var property in properties.Values) {
 				if(property.IsId) continue; // assume ID properties are store-generated.
 				
-				columns.Add(property.Property.Name);
+				columns.Add(property.PropertyName);
 				parameterNames.Add("@" + parameterCounter++);
 				parameters.Add(property.GetValue(toInsert));
 			}
@@ -108,12 +111,12 @@ namespace WebMatrix.Data.StronglyTyped {
 
 			foreach(var property in properties.Values) {
 				if(property.IsId) {
-					idColumns.Add(property.Property.Name + " = @" + parameterCount++);
+					idColumns.Add(property.PropertyName + " = @" + parameterCount++);
 					parameters.Add(property.GetValue(toUpdate));
 				}
 				else {
-					columns.Add(property.Property.Name + " = @" + parameterCount++);
-					parameters.Add(property.GetValue(toUpdate));
+					columns.Add(property.PropertyName + " = @" + parameterCount++);
+					parameters.Add(property.GetValue(toUpdate)??DBNull.Value);
 				}
 			}
 
@@ -128,7 +131,7 @@ namespace WebMatrix.Data.StronglyTyped {
 				string.Join(" AND ",  idColumns)
 			);
 
-			return Tuple.Create(update, parameters.ToArray());
+			return Tuple.Create(update, parameters.ToArray());	
 
 		}
 

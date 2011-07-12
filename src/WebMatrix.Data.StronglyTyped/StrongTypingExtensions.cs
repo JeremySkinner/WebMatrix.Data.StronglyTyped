@@ -39,7 +39,7 @@ namespace WebMatrix.Data.StronglyTyped {
 		public static T FindById<T>(this Database db, object id) {
 			var mapper = Mapper<T>.Create();
 			var idCol = mapper.GetIdColumn();
-			var query = string.Format("select * from {0} where {1} = @0", mapper.TableName, idCol.Property.Name);
+			var query = string.Format("select * from {0} where {1} = @0", mapper.TableName, idCol.PropertyName);
 			return db.Query<T>(query, id).SingleOrDefault();
 		}
 
