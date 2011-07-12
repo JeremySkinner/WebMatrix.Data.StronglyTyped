@@ -88,6 +88,17 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		}
 
 		[Test]
+		public void Gets_property_case_insensitively() {
+			using(var db = Database.Open("Test")) {
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var results = db.Query<User7>("select * from Users").ToList();
+				results.Count.ShouldEqual(1);
+				results[0].name.ShouldEqual("Jeremy");
+			}
+		}
+
+		[Test]
 		public void Does_not_throw_when_object_does_not_have_property() {
 			using(var db = Database.Open("Test")) {
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
@@ -197,6 +208,12 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			public int Id { get; set; }
 			[Column("Name")]
 			public string OtherName { get; set; }
+		}
+
+		[Table("Users")]
+		public class User7 {
+			public int Id { get; set; }
+			public string name { get; set; }
 		}
 	}
 }

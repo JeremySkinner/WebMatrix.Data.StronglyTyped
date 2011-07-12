@@ -45,12 +45,21 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 
 		[Test]
 		public void Inserts_record() {
-			using (var db = Database.Open("Test")) {
+			using(var db = Database.Open("Test")) {
 				db.Insert(new User { Name = "Foo" });
 
 				var result = db.Query<User>("select * from users").Single();
 				result.Id.ShouldEqual(1);
 				result.Name.ShouldEqual("Foo");
+			}
+		}
+		[Test]
+		public void Inserts_record_with_aliased_column() {
+			using(var db = Database.Open("Test")) {
+				db.Insert(new UserWithAliasedProperty { OtherName = "FooAliased" });
+
+				var result = db.Query<User>("select * from users").Single();
+				result.Name.ShouldEqual("FooAliased");
 			}
 		}
 
@@ -100,6 +109,13 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		public class UserWithImplicitId {
 			public int Id { get; set; }
 			public string Name { get; set; }
+		}
+
+		[Table("Users")]
+		public class UserWithAliasedProperty {
+			public int Id { get; set; }
+			[Column("Name")]
+			public string OtherName { get; set; }
 		}
 
 	}
