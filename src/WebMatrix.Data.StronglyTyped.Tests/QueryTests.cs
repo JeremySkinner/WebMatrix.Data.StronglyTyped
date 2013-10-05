@@ -60,12 +60,33 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		}
 
 		[Test]
-		public void Gets_data_strongly_typed() {
-			using (var db = Database.Open("Test")) {
+		public void Gets_data_strongly_typed()
+		{
+			using (var db = Database.Open("Test"))
+			{
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 				db.Execute("insert into Users (Id, Name) values (2, 'Bob')");
 
-				var results = db.Query<User>("select * from Users").ToList();
+				var results = db.Query<User>().ToList();
+				results.Count.ShouldEqual(2);
+
+				results[0].Id.ShouldEqual(1);
+				results[0].Name.ShouldEqual("Jeremy");
+
+				results[1].Id.ShouldEqual(2);
+				results[1].Name.ShouldEqual("Bob");
+			}
+		}
+
+		[Test]
+		public void Gets_data_strongly_typed_raw()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+				db.Execute("insert into Users (Id, Name) values (2, 'Bob')");
+
+				var results = db.QuerySql<User>("select * from Users").ToList();
 				results.Count.ShouldEqual(2);
 
 				results[0].Id.ShouldEqual(1);
@@ -81,7 +102,20 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			using(var db = Database.Open("Test")) {
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 
-				var results = db.Query<User6>("select * from Users").ToList();
+				var results = db.Query<User6>().ToList();
+				results.Count.ShouldEqual(1);
+				results[0].OtherName.ShouldEqual("Jeremy");
+			}
+		}
+
+		[Test]
+		public void Gets_property_with_remapped_name_raw()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var results = db.QuerySql<User6>("select * from Users").ToList();
 				results.Count.ShouldEqual(1);
 				results[0].OtherName.ShouldEqual("Jeremy");
 			}
@@ -92,18 +126,33 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			using(var db = Database.Open("Test")) {
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 
-				var results = db.Query<User7>("select * from Users").ToList();
+				var results = db.Query<User7>().ToList();
 				results.Count.ShouldEqual(1);
 				results[0].name.ShouldEqual("Jeremy");
 			}
 		}
 
 		[Test]
-		public void Does_not_throw_when_object_does_not_have_property() {
-			using(var db = Database.Open("Test")) {
+		public void Gets_property_case_insensitively_raw()
+		{
+			using (var db = Database.Open("Test"))
+			{
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 
-				var results = db.Query<User>("select Name as Foo from Users").ToList();
+				var results = db.QuerySql<User7>("select * from Users").ToList();
+				results.Count.ShouldEqual(1);
+				results[0].name.ShouldEqual("Jeremy");
+			}
+		}
+
+		[Test]
+		public void Does_not_throw_when_object_does_not_have_property()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var results = db.QuerySql<User>("select Name as Foo from Users").ToList();
 				results.Single().Name.ShouldBeNull();
 			}
 		}
@@ -113,7 +162,7 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			using(var db = Database.Open("Test")) {
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 
-				db.Query<User2>("select Name from Users").ToList();
+				db.QuerySql<User2>("select Name from Users").ToList();
 			}
 		}
 
@@ -122,7 +171,7 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			using (var db = Database.Open("Test")) {
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 
-				var ex = Assert.Throws<MappingException>(() => db.Query<User3>("select Name from Users").ToList());
+				var ex = Assert.Throws<MappingException>(() => db.QuerySql<User3>("select Name from Users").ToList());
 				ex.Message.ShouldEqual("Could not map the property 'Name' as its data type does not match the database.");
 			}
 		}
@@ -132,26 +181,43 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			using(var db = Database.Open("Test")) {
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 
-				var ex = Assert.Throws<MappingException>(() => db.Query<User4>("select * from Users").ToList());
+				var ex = Assert.Throws<MappingException>(() => db.Query<User4>().ToList());
 				ex.Message.ShouldEqual("Could not find a parameterless constructor on the type 'WebMatrix.Data.StronglyTyped.Tests.QueryTests+User4'. WebMatrix.Data.StronglyTyped can only be used to map types that have a public, parameterless constructor.");
 
 			}
 		}
 
 		[Test]
-		public void Does_not_map_properties_with_NotMapped_attribute() {
-			using (var db = Database.Open("Test")) {
+		public void Does_not_map_properties_with_NotMapped_attribute()
+		{
+			using (var db = Database.Open("Test"))
+			{
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 
-				var result = db.Query<User5>("select * from Users").Single();
+				var result = db.Query<User5>().Single();
 				result.Id.ShouldEqual(1);
 				result.Name.ShouldBeNull();
 			}
 		}
 
 		[Test]
-		public void FindAll_gets_all() {
-			using(var db = Database.Open("Test")) {
+		public void Does_not_map_properties_with_NotMapped_attribute_raw()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
+
+				var result = db.QuerySql<User5>("select * from Users").Single();
+				result.Id.ShouldEqual(1);
+				result.Name.ShouldBeNull();
+			}
+		}
+
+		[Test]
+		public void FindAll_gets_all()
+		{
+			using (var db = Database.Open("Test"))
+			{
 				db.Execute("insert into Users (Id, Name) values (1, 'Jeremy')");
 				db.Execute("insert into Users (Id, Name) values (2, 'Jeremy')");
 

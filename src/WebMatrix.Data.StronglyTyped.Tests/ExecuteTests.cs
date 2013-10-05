@@ -33,7 +33,6 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			}
 
 			StrongTypingExtensions.Log = Console.Out;
-
 		}
 
 		[SetUp]
@@ -44,21 +43,119 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 		}
 
 		[Test]
+		public void Deletes_all_records()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				var user = new User { Name = "Foo" };
+				db.Insert(user);
+				user.Name = "Bar";
+				db.Insert(user);
+
+				var users = db.Query<User>();
+				users.Count().ShouldEqual(2);
+
+				db.Delete<User>();
+
+				users = db.Query<User>();
+				users.Count().ShouldEqual(0);
+			}
+		}
+
+		[Test]
+		public void Deletes_records_by_id()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				var user = new User { Name = "Foo" };
+				db.Insert(user);
+				user.Name = "Bar";
+				db.Insert(user);
+				user.Name = "Taco";
+				db.Insert(user);
+
+				var users = db.Query<User>();
+				users.Count().ShouldEqual(3);
+
+				db.Delete<User>("where id = @0", users.First().Id);
+
+				users = db.Query<User>();
+				users.Count().ShouldEqual(2);
+
+				db.Delete<User>("where id = @0", users.Last().Id);
+
+				users = db.Query<User>();
+				users.Count().ShouldEqual(1);
+
+				users.First().Name.ShouldEqual("Bar");
+			}
+		}
+
+		[Test]
+		public void Deletes_records_by_query()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				var user = new User { Name = "Boo" };
+				db.Insert(user);
+				user.Name = "Bar";
+				db.Insert(user);
+				user.Name = "Taco";
+				db.Insert(user);
+				user.Name = "Bacon";
+				db.Insert(user);
+
+				var users = db.Query<User>();
+				users.Count().ShouldEqual(4);
+
+				db.Delete<User>("where name like @0", "b%");
+
+				users = db.Query<User>();
+				users.Count().ShouldEqual(1);
+				users.First().Name.ShouldEqual("Taco");
+			}
+		}
+
+		[Test]
+		public void Deletes_records_only_in_query()
+		{
+			using (var db = Database.Open("Test"))
+			{
+				var user = new User { Name = "Boo" };
+				db.Insert(user);
+				user.Name = "Bar";
+				db.Insert(user);
+				user.Name = "Taco";
+				db.Insert(user);
+				user.Name = "Bacon";
+				db.Insert(user);
+
+				var users = db.Query<User>();
+				users.Count().ShouldEqual(4);
+
+				db.Delete<User>("where name = @0", "monkey");
+
+				users = db.Query<User>();
+				users.Count().ShouldEqual(4);
+			}
+		}
+
+		[Test]
 		public void Inserts_record() {
 			using(var db = Database.Open("Test")) {
 				db.Insert(new User { Name = "Foo" });
 
-				var result = db.Query<User>("select * from users").Single();
-				result.Id.ShouldEqual(1);
+				var result = db.Query<User>().Single();
 				result.Name.ShouldEqual("Foo");
 			}
 		}
+
 		[Test]
 		public void Inserts_record_with_aliased_column() {
 			using(var db = Database.Open("Test")) {
 				db.Insert(new UserWithAliasedProperty { OtherName = "FooAliased" });
 
-				var result = db.Query<User>("select * from users").Single();
+				var result = db.Query<User>().Single();
 				result.Name.ShouldEqual("FooAliased");
 			}
 		}
@@ -71,11 +168,10 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 				user.Name = "Bar";
 				db.Update(user);
 
-				var result = db.Query<User>("select * from users").Single();
+				var result = db.Query<User>().Single();
 				result.Name.ShouldEqual("Bar");
 			}
 		}
-
 
 		[Test]
 		public void Inserts_with_store_generated_id() {
@@ -97,7 +193,6 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			}
 		}
 
-
 		[Table("Users")]
 		public class User {
 			[Key]
@@ -117,7 +212,5 @@ namespace WebMatrix.Data.StronglyTyped.Tests {
 			[Column("Name")]
 			public string OtherName { get; set; }
 		}
-
 	}
-
 }
