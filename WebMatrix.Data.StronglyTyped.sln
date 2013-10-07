@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebMatrix.Data.StronglyTyped", "src\WebMatrix.Data.StronglyTyped\WebMatrix.Data.StronglyTyped.csproj", "{7D3BBCDB-C8D9-4522-95DD-B8938D89CB39}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebMatrix.Data.StronglyTyped.Tests", "src\WebMatrix.Data.StronglyTyped.Tests\WebMatrix.Data.StronglyTyped.Tests.csproj", "{03147992-2B9F-4F9B-9A12-656188DC57B0}"

@@ -21,13 +21,15 @@ namespace WebMatrix.Data.StronglyTyped {
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Linq.Expressions;
-	using System.Reflection;
-	using System.Text;
 
 	public class Mapper<T> {
 		readonly Func<T> factory;
 		readonly Dictionary<string, PropertyMetadata<T>> properties;
 		static readonly Lazy<Mapper<T>> instanceCache = new Lazy<Mapper<T>>(() => new Mapper<T>());
+		private string delete;
+		private string insert;
+		private string select;
+		private string update;
 
 		public string TableName { get; private set; }
 
@@ -44,15 +46,15 @@ namespace WebMatrix.Data.StronglyTyped {
 			TableName = attribute != null ? attribute.Name : typeof(T).Name;
 
 			// Get all properties that are writeable without a NotMapped attribute.
-			var properties = from property in typeof(T).GetProperties()
+			var props = from property in typeof(T).GetProperties()
 						where property.CanWrite
 						let notMappedAttr = (NotMappedAttribute)Attribute.GetCustomAttribute(property, typeof(NotMappedAttribute))
 						where notMappedAttr == null
 						select property;
 
-			foreach(var property in properties) {
+			foreach(var property in props) {
 				var propertyMetadata = new PropertyMetadata<T>(property);
-				this.properties[propertyMetadata.PropertyName] = propertyMetadata;
+				properties[propertyMetadata.PropertyName] = propertyMetadata;
 			}
 		}
 
@@ -75,66 +77,91 @@ namespace WebMatrix.Data.StronglyTyped {
 			return instance;
 		}
 
-		public Tuple<string, object[]> MapToInsert(T toInsert) {
-			string insert = "insert into [{0}] ({1}) values ({2})";
-			var columns = new List<string>();
-			var parameterNames = new List<string>();
-			var parameters = new List<object>();
+		public string MapToDelete() {
+			return delete ?? (delete = string.Format("delete from [{0}] ", TableName));
+		}
 
-			int parameterCounter = 0;
+		public Tuple<string, object[]> MapToInsert(T toInsert) {
+			if (insert == null) {
+				var columns = new List<string>();
+				var parameterNames = new List<string>();
+
+				int parameterCounter = 0;
+
+				foreach (var property in properties.Values)
+				{
+					if (property.IsId) continue; // assume ID properties are store-generated.
+
+					columns.Add(property.PropertyName);
+					parameterNames.Add("@" + parameterCounter++);
+				}
+
+				insert = string.Format("insert into [{0}] ({1}) values ({2})",
+					TableName,
+					string.Join(", ", columns),
+					string.Join(", ", parameterNames));
+			}
+
+			var parameters = new List<object>();
 
 			foreach(var property in properties.Values) {
 				if(property.IsId) continue; // assume ID properties are store-generated.
 				
-				columns.Add(property.PropertyName);
-				parameterNames.Add("@" + parameterCounter++);
 				parameters.Add(property.GetValue(toInsert));
 			}
 		
-			insert = string.Format(insert, 
-				TableName, 
-				string.Join(", ", columns), 
-				string.Join(", ", parameterNames));
-
 			return Tuple.Create(insert, parameters.ToArray());
 		}
 
-		public Tuple<string, object[]> MapToUpdate(T toUpdate) {
-			string update = "update [{0}] set {1} where {2}";
-			
-			var idColumns = new List<string>();
+		public string MapToSelect() {
+			if (select == null) {
+				var columns = properties.Values.Select(property => property.PropertyName).ToList();
 
-			var columns = new List<string>();
-			var parameters = new List<object>();
-			int parameterCount = 0;
-
-
-			foreach(var property in properties.Values) {
-				if(property.IsId) {
-					idColumns.Add(property.PropertyName + " = @" + parameterCount++);
-					parameters.Add(property.GetValue(toUpdate));
-				}
-				else {
-					columns.Add(property.PropertyName + " = @" + parameterCount++);
-					parameters.Add(property.GetValue(toUpdate)??DBNull.Value);
-				}
+				select = string.Format("select {0} from [{1}] ",
+										string.Join(", ", columns),
+										TableName);
 			}
 
-			if(idColumns.Count == 0) {
-				throw new NotSupportedException(string.Format("Could not determine Primary Key properties for {0}", typeof(T).Name));
-			}
-
-			update = string.Format(
-				update, 
-				TableName, 
-				string.Join(", ", columns),
-				string.Join(" AND ",  idColumns)
-			);
-
-			return Tuple.Create(update, parameters.ToArray());	
-
+			return select;
 		}
 
+		public Tuple<string, object[]> MapToUpdate(T toUpdate)
+		{
+			if (update == null) {
+				var idColumns = new List<string>();
+
+				var columns = new List<string>();
+				int parameterCount = 0;
+
+				foreach (var property in properties.Values) {
+					if (property.IsId) {
+						idColumns.Add(property.PropertyName + " = @" + parameterCount++);
+					}
+					else {
+						columns.Add(property.PropertyName + " = @" + parameterCount++);
+					}
+				}
+
+				if (idColumns.Count == 0) {
+					throw new NotSupportedException(string.Format("Could not determine Primary Key properties for {0}", typeof (T).Name));
+				}
+
+				update = string.Format(
+					"update [{0}] set {1} where {2}",
+					TableName,
+					string.Join(", ", columns),
+					string.Join(" AND ", idColumns)
+					);
+			}
+
+			var parameters = new List<object>();
+			foreach (var property in properties.Values)
+			{
+				parameters.Add(property.GetValue(toUpdate) ?? DBNull.Value);
+			}
+
+			return Tuple.Create(update, parameters.ToArray());	
+		}
 
 		private static Func<T> CreateActivatorDelegate() {
 			var constructor = typeof (T).GetConstructor(Type.EmptyTypes);

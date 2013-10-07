@@ -24,23 +24,49 @@ namespace WebMatrix.Data.StronglyTyped {
 	public static class StrongTypingExtensions {
 		public static TextWriter Log = TextWriter.Null;
 
-		public static IEnumerable<T> Query<T>(this Database db, string commandText, params object[] args) {
+		public static int Delete<T>(this Database db, string where = null, params object[] args) {
+			var mapper = Mapper<T>.Create();
+			var query = mapper.MapToDelete() + (where ?? "");
+
+			Log.WriteLine(query);
+
+			return db.Execute(query, args);
+		}
+
+		public static IEnumerable<T> QuerySql<T>(this Database db, string commandText, params object[] args) {
+			Log.WriteLine(commandText);
+
 			var queryResults = db.Query(commandText, args);
 			var mapper = Mapper<T>.Create();
-			return (from DynamicRecord record in queryResults select mapper.Map(record)).ToList();
+			return queryResults.Select<dynamic, T>(record => mapper.Map(record)).ToList();
+		}
+
+		public static IEnumerable<T> Query<T>(this Database db, string where = null, params object[] args) {
+			var mapper = Mapper<T>.Create();
+			var query = mapper.MapToSelect() + (where ?? "");
+
+			Log.WriteLine(query);
+			
+			return db.QuerySql<T>(query, args);
 		}
 
 		public static IEnumerable<T> FindAll<T>(this Database db) {
 			var mapper = Mapper<T>.Create();
-			var query = string.Format("select * from {0}", mapper.TableName);
-			return db.Query<T>(query);
+			var query = mapper.MapToSelect();
+	
+			Log.WriteLine(query);
+
+			return db.QuerySql<T>(query);
 		}
 
 		public static T FindById<T>(this Database db, object id) {
 			var mapper = Mapper<T>.Create();
 			var idCol = mapper.GetIdColumn();
-			var query = string.Format("select * from {0} where {1} = @0", mapper.TableName, idCol.PropertyName);
-			return db.Query<T>(query, id).SingleOrDefault();
+			var query = mapper.MapToSelect() + string.Format("where {0} = @0", idCol.PropertyName);
+
+			Log.WriteLine(query);
+
+			return db.QuerySql<T>(query, id).SingleOrDefault();
 		}
 
 		public static void Insert<T>(this Database db, T toInsert) {
